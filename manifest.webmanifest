@@ -1,0 +1,16 @@
+{
+  "name": "시니어가드",
+  "short_name": "시니어가드",
+  "description": "고령자를 위한 보이스피싱·스미싱 예방 앱",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF4F3",
+  "theme_color": "#0B7C71",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

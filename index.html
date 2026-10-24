@@ -1,0 +1,903 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B7C71">
+<meta name="description" content="고령자를 위한 보이스피싱·스미싱 예방 앱">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<title>시니어가드</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="시니어가드">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 레이아웃: 한 화면 한 메시지. 상단에 상태, 가운데 행동 버튼, 하단 고정 '가족 전화 / 112' */
+:root {
+  --bg: #EEF4F3;
+  --surface: #FFFFFF;
+  --ink: #10212B;
+  --muted: #485C65;
+  --line: #CFDEDC;
+  --brand: #0B7C71;
+  --brand-ink: #FFFFFF;
+  --brand-soft: #DCEFEC;
+  --safe: #157A3B;
+  --safe-soft: #E1F2E6;
+  --warn: #A64B06;
+  --warn-soft: #FCEEDB;
+  --danger: #C21B1B;
+  --danger-soft: #FCE5E4;
+  --shadow: 0 1px 2px rgba(16, 33, 43, .06), 0 6px 18px rgba(16, 33, 43, .06);
+  --font: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --scale: 1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0A1D28; --surface: #11303F; --ink: #EEF5F4; --muted: #A8BFC5; --line: #23495A;
+    --brand: #2CC9B6; --brand-ink: #062320; --brand-soft: #123F44;
+    --safe: #5BD88A; --safe-soft: #12392A; --warn: #F6B54A; --warn-soft: #3A2C10;
+    --danger: #FF7B7B; --danger-soft: #431B20; --shadow: 0 1px 2px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0A1D28; --surface: #11303F; --ink: #EEF5F4; --muted: #A8BFC5; --line: #23495A;
+  --brand: #2CC9B6; --brand-ink: #062320; --brand-soft: #123F44;
+  --safe: #5BD88A; --safe-soft: #12392A; --warn: #F6B54A; --warn-soft: #3A2C10;
+  --danger: #FF7B7B; --danger-soft: #431B20; --shadow: 0 1px 2px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+:root[data-size="2"] { --scale: 1.12; }
+:root[data-size="3"] { --scale: 1.25; }
+
+html { font-size: calc(18px * var(--scale)); -webkit-text-size-adjust: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 1rem; line-height: 1.55; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 3px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.3; }
+p { margin: 0; }
+
+.app { max-width: 520px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 8px calc(120px + env(safe-area-inset-bottom, 0px)); }
+
+/* 상단 */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px 6px; }
+.brand { white-space: nowrap; min-width: 0; display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 1.05rem; letter-spacing: -.01em; }
+.brand svg { color: var(--brand); }
+.top-tools { display: flex; gap: 8px; }
+.chip-btn { white-space: nowrap; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: .85rem; display: inline-flex; align-items: center; gap: 6px; }
+.chip-btn[aria-pressed="false"] { color: var(--muted); }
+
+.view { display: flex; flex-direction: column; gap: 16px; padding-top: 8px; }
+.back { align-self: flex-start; min-height: 48px; padding: 0 14px 0 6px; border: 0; background: none; font-weight: 700; color: var(--brand); display: inline-flex; align-items: center; gap: 4px; font-size: 1rem; }
+.title { font-size: 1.45rem; font-weight: 900; letter-spacing: -.02em; }
+.lead { color: var(--muted); }
+
+/* 상태 카드 */
+.status { border-radius: 24px; padding: 28px 20px 24px; display: grid; justify-items: center; gap: 10px; text-align: center; background: var(--safe-soft); }
+.status .ring { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); color: var(--safe); box-shadow: var(--shadow); }
+.status h1 { font-size: 1.9rem; font-weight: 900; letter-spacing: -.03em; }
+.status p { color: var(--muted); font-weight: 500; }
+.status.l1 { background: var(--warn-soft); } .status.l1 .ring { color: var(--warn); }
+.status.l2 { background: var(--danger-soft); } .status.l2 .ring { color: var(--danger); }
+.status.l2 h1 { color: var(--danger); }
+
+/* 큰 버튼 */
+.actions { display: grid; gap: 12px; }
+.big { width: 100%; min-height: 76px; border-radius: 18px; border: 1.5px solid var(--line); background: var(--surface); box-shadow: var(--shadow); display: grid; grid-template-columns: 52px 1fr 20px; align-items: center; gap: 12px; padding: 12px 14px; text-align: left; }
+.big .ic { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); }
+.big strong { display: block; font-size: 1.15rem; font-weight: 700; letter-spacing: -.01em; }
+.big small { display: block; color: var(--muted); font-size: .85rem; margin-top: 2px; }
+.big .go { color: var(--muted); }
+.big.primary { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.big.primary .ic { background: rgba(255,255,255,.18); color: var(--brand-ink); }
+.big.primary small, .big.primary .go { color: inherit; opacity: .85; }
+
+.btn { min-height: 64px; border-radius: 16px; border: 1.5px solid var(--line); background: var(--surface); font-weight: 700; font-size: 1.1rem; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; text-decoration: none; color: var(--ink); }
+.btn.solid { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.btn.red { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 12px; }
+.card h2 { font-size: 1.15rem; font-weight: 700; }
+.note { font-size: .9rem; color: var(--muted); }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; letter-spacing: .02em; padding: 4px 10px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); justify-self: start; }
+.tag.demo { background: var(--warn-soft); color: var(--warn); }
+
+/* 결과 */
+.reasons { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.reasons li { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; font-weight: 500; }
+.reasons li svg { margin-top: 3px; }
+.links { display: grid; gap: 8px; }
+.link-item { border-radius: 12px; padding: 10px 12px; background: var(--danger-soft); font-size: .88rem; overflow-wrap: anywhere; }
+.link-item.ok { background: var(--safe-soft); }
+.link-item b { display: block; font-family: ui-monospace, Menlo, monospace; font-size: .9rem; }
+
+/* 입력 */
+textarea, input[type="text"], input[type="tel"] { width: 100%; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); padding: 14px; font-size: 1.05rem; }
+textarea { min-height: 170px; resize: vertical; line-height: 1.5; }
+label.field { display: grid; gap: 6px; font-weight: 700; }
+.samples { display: flex; flex-wrap: wrap; gap: 8px; }
+.samples button { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1.5px dashed var(--line); background: transparent; font-size: .88rem; font-weight: 500; }
+
+.pick { display: grid; place-items: center; gap: 8px; min-height: 200px; border: 2px dashed var(--line); border-radius: 20px; background: var(--surface); text-align: center; padding: 16px; font-weight: 700; color: var(--brand); }
+.pick input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.pick img { max-height: 320px; max-width: 100%; border-radius: 12px; }
+.steps { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+
+.progress { display: grid; justify-items: center; gap: 12px; padding: 24px 0; text-align: center; font-weight: 700; }
+.spinner { width: 56px; height: 56px; border-radius: 50%; border: 6px solid var(--brand-soft); border-top-color: var(--brand); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 통화 체크 */
+.q { display: grid; gap: 10px; padding: 16px; border-radius: 18px; background: var(--surface); border: 1.5px solid var(--line); }
+.q h3 { font-size: 1.08rem; font-weight: 700; }
+.q p { color: var(--muted); font-size: .88rem; }
+.seg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.seg button { min-height: 56px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); font-weight: 700; }
+.seg button[aria-pressed="true"] { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.seg button.yes[aria-pressed="true"] { background: var(--danger); border-color: var(--danger); color: var(--surface); }
+
+/* 가족 */
+.fam { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.fam .num { font-size: 1.35rem; font-weight: 900; letter-spacing: .02em; font-variant-numeric: tabular-nums; user-select: all; }
+.callout { display: grid; gap: 6px; text-align: center; padding: 18px; border-radius: 18px; background: var(--brand-soft); }
+.callout .num { font-size: 2.2rem; font-weight: 900; letter-spacing: .04em; font-variant-numeric: tabular-nums; user-select: all; }
+.icon-btn { min-width: 52px; min-height: 52px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+
+/* 시연 */
+.meter { display: grid; gap: 10px; }
+.pct { font-size: 3.4rem; font-weight: 900; letter-spacing: -.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+.bar { height: 16px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--safe); border-radius: inherit; transition: width .6s ease, background .3s; }
+.log { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.log li { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1.5px solid var(--line); }
+.log .quote { font-weight: 700; }
+.log .sig { font-size: .82rem; color: var(--muted); }
+.trk { display: inline-block; font-size: .72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--brand-soft); color: var(--brand); margin-right: 6px; }
+
+/* 하단 고정 */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--surface); border-top: 1.5px solid var(--line); padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.dock .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dock button { min-height: 64px; border-radius: 16px; font-weight: 900; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 2px solid var(--brand); background: var(--brand-soft); color: var(--brand); }
+.dock button.sos { border-color: var(--danger); background: var(--danger-soft); color: var(--danger); }
+
+.toast { position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-weight: 700; z-index: 9; max-width: calc(100% - 32px); text-align: center; }
+
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } .bar i { transition: none; } }
+html, body { margin: 0; }
+:root { padding-top: env(safe-area-inset-top, 0px); }
+.brand img { width: 30px; height: 30px; border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.3-3 7.9-7 9.5-4-1.6-7-5.2-7-9.5V6l7-3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 12l2.4 2.4L15.5 9.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5L22 20H2L12 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7.5v5.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="12" cy="16.4" r="1.2" fill="currentColor"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.8" fill="currentColor"/><path d="M4 18l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.5h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3.5l3 .5 1.5 4-2 1.5a11 11 0 005.5 5.5l1.5-2 4 1.5.5 3c0 1-1 2-2 2C10.5 19.5 4.5 13.5 4.5 5.5c0-1 1-2 2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-family" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="9.5" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 19c.6-3.3 2.8-5 5.5-5s4.9 1.7 5.5 5M14 15c.8-.6 1.8-1 3-1 2.3 0 3.9 1.5 4.5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 8.5l5.5 3.5-5.5 3.5z" fill="currentColor"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M15.5 9a4 4 0 010 6M18 6.5a7.5 7.5 0 010 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="currentColor"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15V6a2 2 0 012-2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><img src="icons/icon-192.png" alt="">시니어가드</div>
+    <div class="top-tools">
+      <button class="chip-btn" id="sizeBtn" type="button" aria-label="글씨 크기 바꾸기">글씨 <span id="sizeLabel">크게</span></button>
+      <button class="chip-btn" id="voiceBtn" type="button" aria-pressed="true" aria-label="음성 안내 켜고 끄기"><svg width="20" height="20"><use href="#i-sound"/></svg><span id="voiceLabel">음성</span></button>
+    </div>
+  </header>
+
+  <!-- 홈 -->
+  <section class="view" id="v-home">
+    <div class="status" id="homeStatus">
+      <div class="ring"><svg width="56" height="56"><use href="#i-shield"/></svg></div>
+      <h1>지켜드리고 있어요</h1>
+      <p>의심스러운 문자나 전화가 오면<br>아래 버튼을 눌러 주세요</p>
+    </div>
+    <div class="actions">
+      <button class="big primary" data-go="capture" type="button">
+        <span class="ic"><svg width="30" height="30"><use href="#i-image"/></svg></span>
+        <span><strong>화면 검사하기</strong><small>문자·카톡 캡처 사진으로 검사</small></span>
+        <svg class="go" width="20" height="20"><use href="#i-chev"/></svg>
+      </button>
+      <button class="big" data-go="text" type="button">
+        <span class="ic"><svg width="30" height="30"><use href="#i-msg"/></svg></span>
+        <span><strong>문자 글자로 검사하기</strong><small>복사한 글자를 붙여넣어 검사</small></span>
+        <svg class="go" width="20" height="20"><use href="#i-chev"/></svg>
+      </button>
+      <button class="big" data-go="call" type="button">
+        <span class="ic"><svg width="30" height="30"><use href="#i-phone"/></svg></span>
+        <span><strong>방금 전화가 이상했어요</strong><small>돈을 보내기 전에 꼭 눌러 주세요</small></span>
+        <svg class="go" width="20" height="20"><use href="#i-chev"/></svg>
+      </button>
+    </div>
+    <div class="card" id="famPrompt" hidden>
+      <h2>가족 번호를 등록해 주세요</h2>
+      <p class="note">위험할 때 바로 확인 전화를 걸 수 있어요. 자녀분이 대신 등록해 주셔도 됩니다.</p>
+      <button class="btn" data-go="family" type="button">가족 등록하기</button>
+    </div>
+    <div class="actions">
+      <button class="big" data-go="family" type="button">
+        <span class="ic"><svg width="30" height="30"><use href="#i-family"/></svg></span>
+        <span><strong>가족 연락처</strong><small id="famSummary">등록된 가족이 없어요</small></span>
+        <svg class="go" width="20" height="20"><use href="#i-chev"/></svg>
+      </button>
+      <button class="big" data-go="demo" type="button">
+        <span class="ic"><svg width="30" height="30"><use href="#i-play"/></svg></span>
+        <span><strong>사기 전화 체험하기</strong><small>AI가 위험을 찾아내는 과정을 봐요</small></span>
+        <svg class="go" width="20" height="20"><use href="#i-chev"/></svg>
+      </button>
+    </div>
+    <p class="note">시니어가드는 통화를 몰래 녹음하거나 듣지 않아요. 통화 중 실시간 탐지는 통신사 앱(후후·에이닷·익시오)과 함께 쓰시면 더 안전해요.</p>
+  </section>
+
+  <!-- 화면(캡처) 검사 -->
+  <section class="view" id="v-capture" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <h2 class="title">화면 검사하기</h2>
+    <p class="lead">의심스러운 문자나 카톡 화면을 캡처한 뒤, 그 사진을 골라 주세요. 사진은 휴대폰 안에서만 읽고 어디에도 보내지 않아요.</p>
+    <label class="pick" id="pickBox" for="capFile">
+      <input type="file" id="capFile" accept="image/*">
+      <svg width="44" height="44"><use href="#i-image"/></svg>
+      <span id="pickText">캡처 사진 고르기</span>
+    </label>
+    <button class="btn solid" id="capRun" type="button" disabled>이 사진 검사하기</button>
+    <div id="capBusy" class="progress" hidden>
+      <div class="spinner" aria-hidden="true"></div>
+      <span id="capBusyText">검사 중입니다. 잠시만 기다려 주세요</span>
+      <button class="btn ghost" id="capStop" type="button" style="max-width:220px">그만하기</button>
+    </div>
+    <p class="note" id="capMsg" role="status"></p>
+    <div class="card" id="liveTextHelp">
+      <h2>사진 검사가 안 될 때</h2>
+      <p class="note">아이폰은 사진 속 글자를 복사할 수 있어요.</p>
+      <ol class="steps">
+        <li>사진 앱에서 캡처한 사진을 열어요</li>
+        <li>글자를 손가락으로 길게 눌러요</li>
+        <li>'모두 선택'을 누른 뒤 '복사'를 눌러요</li>
+        <li>아래 버튼을 눌러 붙여넣어요</li>
+      </ol>
+      <button class="btn" data-go="text" type="button">글자 붙여넣어 검사하기</button>
+    </div>
+  </section>
+
+  <!-- 글자 검사 -->
+  <section class="view" id="v-text" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <h2 class="title">문자 글자로 검사하기</h2>
+    <label class="field" for="msgInput">받은 문자·카톡·이메일 내용
+      <textarea id="msgInput" placeholder="여기를 길게 눌러 '붙여넣기'를 선택하세요"></textarea>
+    </label>
+    <button class="btn solid" id="textRun" type="button">검사하기</button>
+    <div class="card">
+      <span class="tag">예시로 해 보기</span>
+      <div class="samples" id="samples"></div>
+    </div>
+  </section>
+
+  <!-- 방금 통화 -->
+  <section class="view" id="v-call" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <h2 class="title">방금 받은 전화를 떠올려 주세요</h2>
+    <p class="lead">아는 만큼만 눌러 주세요. 잘 모르겠으면 '몰라요'를 누르면 돼요.</p>
+    <div id="questions" class="actions"></div>
+    <button class="btn solid" id="callRun" type="button">결과 보기</button>
+  </section>
+
+  <!-- 결과 -->
+  <section class="view" id="v-result" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <div class="status" id="resStatus">
+      <div class="ring"><svg width="56" height="56" id="resIcon"><use href="#i-shield"/></svg></div>
+      <h1 id="resTitle"></h1>
+      <p id="resSub"></p>
+    </div>
+    <div class="card" id="resWhyCard">
+      <span class="tag" id="resType"></span>
+      <h2 id="resWhyTitle">이런 점이 위험해요</h2>
+      <ul class="reasons" id="resReasons"></ul>
+      <div class="links" id="resLinks"></div>
+    </div>
+    <div class="actions" id="resActions"></div>
+    <button class="btn ghost" id="resReplay" type="button"><svg width="22" height="22"><use href="#i-sound"/></svg>다시 듣기</button>
+    <p class="note" id="resFoot"></p>
+  </section>
+
+  <!-- 가족 -->
+  <section class="view" id="v-family" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <h2 class="title">가족 연락처</h2>
+    <p class="lead">사기가 의심될 때, 저장해 둔 진짜 번호로 직접 전화해 확인하세요.</p>
+    <div id="famList" class="actions"></div>
+    <form class="card" id="famForm" autocomplete="off">
+      <h2>새 가족 등록</h2>
+      <label class="field" for="famName">이름 또는 부르는 말<input type="text" id="famName" placeholder="예: 큰아들" required></label>
+      <label class="field" for="famPhone">전화번호<input type="tel" id="famPhone" placeholder="예: 010-1234-5678" inputmode="tel" required></label>
+      <button class="btn solid" type="submit">저장하기</button>
+      <p class="note">번호는 이 휴대폰에만 저장되고 다른 곳으로 보내지 않아요.</p>
+    </form>
+  </section>
+
+  <!-- 신고·대처 -->
+  <section class="view" id="v-sos" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <h2 class="title">경찰에 신고하기</h2>
+    <div class="callout">
+      <span>경찰 신고</span>
+      <span class="num">112</span>
+      <a class="btn red" href="tel:112">112에 전화 걸기</a>
+    </div>
+    <p class="note">전화가 걸리지 않으면 휴대폰 전화 앱에서 112를 직접 눌러 주세요.</p>
+    <div class="card">
+      <h2>이렇게 말하세요</h2>
+      <p>"보이스피싱이 의심되는 전화(문자)를 받았습니다. 상대가 ○○라고 하며 돈을 요구했습니다."</p>
+    </div>
+    <div class="card">
+      <h2>이미 돈을 보냈다면</h2>
+      <ol class="steps">
+        <li>바로 112나 돈을 보낸 은행 고객센터에 전화해 <b>지급정지</b>를 요청하세요</li>
+        <li>금융감독원 상담 <b>1332</b>에서 피해 구제 절차를 안내받으세요</li>
+        <li>받은 문자와 통화 기록은 지우지 말고 남겨 두세요</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h2>링크를 눌렀거나 앱을 깔았다면</h2>
+      <ol class="steps">
+        <li>모르는 앱은 지우고, 비밀번호·인증서는 바꿔 주세요</li>
+        <li>불법스팸·해킹 상담은 <b>118</b>(한국인터넷진흥원)</li>
+        <li>내 이름으로 휴대폰이 개통됐는지 엠세이퍼(msafer.or.kr)에서 확인하세요</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 시연 -->
+  <section class="view" id="v-demo" hidden>
+    <button class="back" data-back type="button"><svg width="22" height="22"><use href="#i-back"/></svg>처음으로</button>
+    <span class="tag demo">시연용 수치 · 실제 분석 결과가 아닙니다</span>
+    <h2 class="title">가족 사칭 전화, 이렇게 잡아요</h2>
+    <div class="card meter">
+      <span class="note">통합 위험도</span>
+      <span class="pct" id="demoPct">0%</span>
+      <div class="bar"><i id="demoBar"></i></div>
+      <span id="demoState" class="note">대기 중</span>
+    </div>
+    <div class="row2">
+      <button class="btn solid" id="demoStart" type="button">체험 시작</button>
+      <button class="btn" id="demoReset" type="button">처음부터</button>
+    </div>
+    <ul class="log" id="demoLog"></ul>
+  </section>
+</div>
+
+<nav class="dock" aria-label="긴급 버튼">
+  <div class="inner">
+    <button type="button" id="dockFamily"><svg width="24" height="24"><use href="#i-family"/></svg>가족 전화</button>
+    <button type="button" class="sos" data-go="sos"><svg width="24" height="24"><use href="#i-phone"/></svg>112 신고</button>
+  </div>
+</nav>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+/* SeniorGuard 판정 엔진: 문자·메신저 텍스트(Track 4)와 통화 체크(Track 2·3 수동판)를 정상·주의·위험으로 판정 */
+const SG = (() => {
+  const TYPES = [
+    { id: "parcel", name: "택배 사칭", re: /택배|배송|운송장|반송|배송지|주소\s*(불일치|불명|오류|확인)|우체국|CJ\s*대한통운|로젠|한진/i },
+    { id: "obit", name: "부고·청첩장 사칭", re: /부고|부음|별세|장례식?장|청첩장|결혼식\s*초대|모바일\s*초대장/ },
+    { id: "gov", name: "정부지원금·환급 사칭", re: /지원금|환급금?|재난\s*지원|민생|국민\s*지원|근로장려|세금\s*환급|보험료\s*환급/ },
+    { id: "agency", name: "검찰·경찰·금감원 사칭", re: /검찰|검사|수사관|경찰청?|금감원|금융감독원|법원|출석\s*요구|소환|구속|범죄에?\s*연루|대포\s*통장|사건\s*번호|명의\s*도용/ },
+    { id: "payment", name: "결제·카드 승인 사칭", re: /해외\s*결제|결제\s*(승인|완료|요청)|승인\s*(완료|되었)|카드\s*발급|본인이?\s*아닐\s*경우|본인\s*결제가?\s*아니|구매\s*완료|주문\s*완료/ },
+    { id: "family", name: "가족·지인 사칭", re: /(엄마|아빠|어머니|아버지|아들|딸|이모|삼촌)[\s\S]{0,40}(폰|핸드폰|휴대폰|액정|번호)|(폰|핸드폰|휴대폰|액정)\s*(이|가)?\s*(깨|고장|박살|수리|망가)|임시\s*(폰|번호)|번호\s*(가\s*)?바뀌|문화\s*상품권|기프트\s*카드|구글\s*기프트|대신\s*결제|폰\s*보험/ },
+    { id: "loan", name: "대출 사기", re: /대출|저금리|대환|한도\s*조회|햇살론|신용\s*등급\s*(상향|올려)/ },
+    { id: "invest", name: "투자 사기", re: /리딩방|수익률|고수익|원금\s*보장|주식\s*(정보|추천|종목)|코인\s*투자|투자\s*(수익|정보)/ },
+    { id: "fine", name: "과태료·범칙금 사칭", re: /범칙금|과태료|교통\s*위반|벌점|단속\s*(되|내역)/ },
+    { id: "health", name: "건강검진·보험 사칭", re: /건강\s*검진\s*(결과|안내)|검진\s*결과|보험금\s*(청구|지급)/ },
+  ];
+
+  const DEMANDS = [
+    { id: "app", w: 4, say: "앱을 깔라고 해요", re: /앱\s*(을|를)?\s*(설치|다운|깔)|설치\s*(해|하)|\.apk|보안\s*(앱|프로그램)|원격\s*(제어|지원)|팀뷰어|애니\s*데스크|anydesk|teamviewer/i },
+    { id: "info", w: 3, say: "개인정보나 인증번호를 물어요", re: /주민\s*(등록)?\s*번호|계좌\s*(번호|비밀)|비밀\s*번호|OTP|인증\s*번호|카드\s*번호|신분증|보안\s*카드|공인\s*인증서|CVC/i },
+    { id: "money", w: 3, say: "돈이나 상품권을 보내라고 해요", re: /송금|이체|입금|보내\s*(줘|주|라|달)|돈\s*(이|좀)?\s*(필요|급해)|합의금|현금|상품권|기프트\s*카드|안전\s*계좌|대신\s*결제/ },
+    { id: "secret", w: 3, say: "다른 사람에게 비밀로 하래요", re: /비밀로|아무(한테|에게)도|말하지\s*마|알리지\s*마|(가족|아빠|엄마|남편|아내)(한테|에게)는?\s*(말|얘기|알리)/ },
+    { id: "urgent", w: 1, say: "급하다고 재촉해요", re: /즉시|지금\s*(바로|당장)|당장|오늘\s*(안|중)|24\s*시간|기한\s*(내|안)|마감|긴급|빨리|서둘러|급해|급하게/ },
+    { id: "contact", w: 2, say: "다른 번호나 메신저로 연락하래요", re: /카톡\s*(으로|친구)|친구\s*추가|아래\s*번호로|이\s*번호로\s*(연락|문자|전화)|텔레그램|오픈\s*채팅|문자\s*(로|만)\s*(연락|답장)/ },
+    { id: "callback", w: 2, say: "적힌 번호로 전화하라고 해요", re: /\d{2,4}-\d{3,4}-\d{4}[\s\S]{0,12}(문의|연락|전화|상담)|(문의|연락|전화|상담)[\s\S]{0,15}\d{2,4}-\d{3,4}-\d{4}/ },
+    { id: "abroad", w: 2, say: "해외에서 보낸 문자예요", re: /국외\s*발신|국제\s*발신|해외\s*발신/ },
+  ];
+
+  const SHORTENERS = ["bit.ly", "han.gl", "me2.do", "url.kr", "vo.la", "t.ly", "tinyurl.com", "is.gd", "buly.kr", "c11.kr", "goo.gl", "shorturl.at", "cutt.ly", "ow.ly", "rebrand.ly", "t.co", "naver.me", "zrr.kr", "lrl.kr", "abit.ly", "u.to"];
+  const BAD_TLDS = ["xyz", "top", "click", "icu", "cn", "shop", "live", "site", "online", "info", "buzz", "cyou", "vip", "work", "fun", "cc", "tk", "ml", "ga", "cf", "gq", "pw", "sbs", "lol"];
+  const OFFICIAL = ["go.kr", "or.kr", "epost.go.kr", "cjlogistics.com", "ilogen.com", "hanjin.com", "lotteglogis.com", "naver.com", "kakao.com", "daum.net", "kbstar.com", "shinhan.com", "shinhancard.com", "wooribank.com", "wooricard.com", "kebhana.com", "hanacard.co.kr", "nonghyup.com", "nhbank.com", "ibk.co.kr", "toss.im", "coupang.com", "samsungcard.com", "hyundaicard.com", "lottecard.co.kr", "kbcard.com", "kakaobank.com", "11st.co.kr", "gmarket.co.kr", "nhis.or.kr", "hometax.go.kr", "fss.or.kr", "police.go.kr", "spo.go.kr", "court.go.kr"];
+  const BRANDS = /(cj|epost|post|logen|hanjin|nts|hometax|gov|kakao|naver|kbstar|kbcard|shinhan|woori|hana|nonghyup|ibk|toss|coupang|samsung|hyundai|lotte|police|fss|court|spo|nhis)/i;
+
+  const URL_RE = /((https?:\/\/)?(www\.)?[a-z0-9][a-z0-9\-]*(\.[a-z0-9\-]+)*\.[a-z]{2,10}(:\d+)?(\/[^\s<>"'가-힣]*)?)|(https?:\/\/\d{1,3}(\.\d{1,3}){3}[^\s]*)/gi;
+
+  function extractLinks(text) {
+    const out = [];
+    const seen = new Set();
+    for (const m of text.matchAll(URL_RE)) {
+      let raw = m[0].replace(/[).,!?]+$/, "");
+      // 이메일 주소·소수점 숫자·파일명 같은 오탐 제외
+      const before = text[m.index - 1];
+      if (before === "@") continue;
+      if (/^\d+(\.\d+)+$/.test(raw)) continue;
+      const host = raw.replace(/^https?:\/\//i, "").split(/[\/:?#]/)[0].toLowerCase();
+      if (!host.includes(".")) continue;
+      const tld = host.split(".").pop();
+      if (!/^[a-z]{2,10}$/.test(tld) && !/^\d+$/.test(tld)) continue;
+      if (!m[1]?.match(/^https?:|^www\./i) && !/(com|net|kr|org|io|me|ly|gl|do|xyz|top|click|icu|cn|shop|live|site|online|info|buzz|vip|cc|tk|at|im|to|co|sbs|lol|pw|fun|work|cyou)$/.test(tld)) continue;
+      if (seen.has(host + raw)) continue;
+      seen.add(host + raw);
+      out.push({ raw, host });
+    }
+    return out;
+  }
+
+  function judgeLink({ raw, host }) {
+    const flags = [];
+    let w = 0;
+    const official = OFFICIAL.some((d) => host === d || host.endsWith("." + d));
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) { w += 3; flags.push("숫자로만 된 인터넷 주소예요"); }
+    if (host.includes("xn--")) { w += 3; flags.push("글자를 흉내 낸 가짜 주소예요"); }
+    if (SHORTENERS.some((s) => host === s || host.endsWith("." + s))) { w += 2; flags.push("진짜 주소를 숨긴 단축 주소예요"); }
+    const tld = host.split(".").pop();
+    if (BAD_TLDS.includes(tld)) { w += 2; flags.push("공공기관·은행이 쓰지 않는 주소예요"); }
+    if (/\.apk(\?|$|#)/i.test(raw)) { w += 5; flags.push("누르면 앱이 깔리는 링크예요"); }
+    if (!official && BRANDS.test(host)) { w += 3; flags.push("공식 업체 이름을 흉내 낸 주소예요"); }
+    if (/@/.test(raw.replace(/^https?:\/\//, "").split("/")[0])) { w += 2; flags.push("주소를 속이는 형태예요"); }
+    if (official) w = Math.max(0, w - 2);
+    return { raw, host, official, w, flags };
+  }
+
+  const LEVEL = ["정상", "주의", "위험"];
+
+  function analyzeText(input) {
+    const text = String(input || "").normalize("NFC");
+    const types = TYPES.filter((t) => t.re.test(text));
+    const demands = DEMANDS.filter((d) => d.re.test(text));
+    const links = extractLinks(text).map(judgeLink);
+
+    let score = 0;
+    const reasons = [];
+    if (types.length) score += 2;
+    for (const d of demands) { score += d.w; reasons.push(d.say); }
+
+    const anyBadLink = links.some((l) => l.w >= 2);
+    for (const l of links) {
+      if (l.official && l.w === 0) continue;
+      score += 2 + l.w;
+      if (l.flags.length) for (const f of l.flags) if (!reasons.includes(f)) reasons.push(f);
+    }
+    if (links.length && !links.every((l) => l.official) && !anyBadLink) reasons.push("눌러 보라는 링크가 있어요");
+
+    const strong = demands.some((d) => ["app", "info", "money"].includes(d.id));
+    const signalCount = (types.length ? 1 : 0) + demands.length + (links.some((l) => !l.official) ? 1 : 0);
+
+    let level = 0;
+    if (score >= 3) level = 1;
+    // 융합 원칙: 신호가 하나뿐이면 '주의'까지, 둘 이상 겹쳐야 '위험'
+    if (signalCount >= 2 && (score >= 4 || strong || anyBadLink)) level = 2;
+    if (signalCount <= 1 && level === 2) level = 1;
+
+    return {
+      level,
+      levelName: LEVEL[level],
+      type: types[0]?.name || (level ? "사기 의심 메시지" : "해당 없음"),
+      types: types.map((t) => t.name),
+      reasons: reasons.slice(0, 4),
+      links,
+      score,
+    };
+  }
+
+  const CALL_QUESTIONS = [
+    { id: "money", q: "급하게 돈을 보내 달라고 했나요?", sub: "합의금, 수술비, 대신 결제, 상품권 등", w: 3, say: "급하게 돈을 요구했어요", strong: true },
+    { id: "family", q: "가족이나 지인이라고 했나요?", sub: "\"엄마, 나야\", \"번호가 바뀌었어\"", w: 2, say: "가족이나 지인이라고 했어요" },
+    { id: "agency", q: "검찰·경찰·금감원·은행이라고 했나요?", sub: "\"범죄에 연루됐어요\", \"계좌가 위험해요\"", w: 3, say: "기관이라고 하며 겁을 줬어요", strong: true },
+    { id: "secret", q: "아무에게도 말하지 말라고 했나요?", sub: "\"아빠한테는 말하지 마\"", w: 3, say: "다른 사람에게 비밀로 하랬어요" },
+    { id: "app", q: "앱을 깔거나 인증번호를 알려 달라고 했나요?", sub: "원격 앱, 보안 앱, 비밀번호, OTP", w: 4, say: "앱 설치나 인증번호를 요구했어요", strong: true },
+    { id: "hold", q: "전화를 끊지 말라고 했나요?", sub: "또는 다른 번호로 다시 걸라고 했나요?", w: 2, say: "전화를 끊지 말라고 했어요" },
+    { id: "voice", q: "목소리가 평소와 조금 달랐나요?", sub: "울먹이거나, 말투가 어색하거나, 감기라고 했나요?", w: 1, say: "목소리가 평소와 달랐어요" },
+  ];
+
+  function analyzeCall(answers) {
+    let score = 0;
+    const reasons = [];
+    let strong = false;
+    let yes = 0;
+    for (const q of CALL_QUESTIONS) {
+      if (answers[q.id] === "yes") { score += q.w; reasons.push(q.say); yes++; if (q.strong) strong = true; }
+      else if (answers[q.id] === "unsure") score += q.w / 3;
+    }
+    let level = 0;
+    if (score >= 2) level = 1;
+    if (yes >= 2 && (strong || score >= 6)) level = 2;
+    let type = "해당 없음";
+    if (answers.agency === "yes") type = "기관 사칭 전화";
+    else if (answers.family === "yes" && (answers.money === "yes" || answers.secret === "yes")) type = "가족 사칭 전화";
+    else if (level) type = "보이스피싱 의심 전화";
+    return { level, levelName: LEVEL[level], type, reasons: reasons.slice(0, 4), links: [], score };
+  }
+
+  return { analyzeText, analyzeCall, extractLinks, CALL_QUESTIONS, LEVEL };
+})();
+if (typeof module !== "undefined") module.exports = SG;
+
+</script>
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  /* ---------- 설정: 글씨 크기, 음성 ---------- */
+  const SIZES = ["크게", "더 크게", "아주 크게"];
+  let size = store.get("sg.size", 1);
+  let voice = store.get("sg.voice", true);
+  function applySettings() {
+    document.documentElement.dataset.size = size;
+    $("#sizeLabel").textContent = SIZES[size - 1];
+    $("#voiceBtn").setAttribute("aria-pressed", String(voice));
+    $("#voiceLabel").textContent = voice ? "켬" : "끔";
+  }
+  $("#sizeBtn").onclick = () => { size = size % 3 + 1; store.set("sg.size", size); applySettings(); };
+  $("#voiceBtn").onclick = () => { voice = !voice; store.set("sg.voice", voice); applySettings(); if (!voice) stopSpeak(); else speak("음성 안내를 켰어요"); };
+  applySettings();
+
+  function speak(text) {
+    if (!voice || !("speechSynthesis" in window)) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "ko-KR"; u.rate = 0.9;
+      speechSynthesis.speak(u);
+    } catch {}
+  }
+  function stopSpeak() { try { speechSynthesis.cancel(); } catch {} }
+  function buzz(level) { try { navigator.vibrate?.(level === 2 ? [400, 150, 400, 150, 400] : [120, 80, 120]); } catch {} }
+
+  let toastT;
+  function toast(msg) { const t = $("#toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2600); }
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); toast("복사했어요"); }
+    catch { toast("복사가 안 되면 글자를 길게 눌러 복사해 주세요"); }
+  }
+
+  /* ---------- 화면 이동 ---------- */
+  const VIEWS = ["home", "capture", "text", "call", "result", "family", "sos", "demo"];
+  function show(name) {
+    if (!VIEWS.includes(name)) name = "home";
+    for (const v of VIEWS) $("#v-" + v).hidden = v !== name;
+    window.scrollTo(0, 0);
+    if (name === "home") { stopSpeak(); renderHome(); }
+    if (name === "family") renderFamily();
+    if (name === "call") renderQuestions();
+    if (name !== "demo") stopDemo();
+  }
+  document.addEventListener("click", (e) => {
+    const go = e.target.closest("[data-go]");
+    if (go) { show(go.dataset.go); return; }
+    if (e.target.closest("[data-back]")) show("home");
+  });
+
+  /* ---------- 가족 ---------- */
+  let family = store.get("sg.family", []);
+  const telOf = (p) => p.replace(/[^\d+]/g, "");
+  function renderHome() {
+    $("#famPrompt").hidden = family.length > 0;
+    $("#famSummary").textContent = family.length ? family.map((f) => f.name).join(", ") : "등록된 가족이 없어요";
+  }
+  function familyCard(f, i, withDelete) {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.innerHTML = `<div class="fam"><div><div class="note"></div><div class="num"></div></div>${withDelete ? `<button class="icon-btn" type="button" aria-label="삭제"><svg width="22" height="22"><use href="#i-trash"/></svg></button>` : ""}</div>
+      <div class="row2"><a class="btn solid" href="tel:${telOf(f.phone)}"><svg width="22" height="22"><use href="#i-phone"/></svg>전화 걸기</a><button class="btn" type="button" data-copy><svg width="22" height="22"><use href="#i-copy"/></svg>번호 복사</button></div>`;
+    el.querySelector(".note").textContent = f.name;
+    el.querySelector(".num").textContent = f.phone;
+    el.querySelector("[data-copy]").onclick = () => copy(f.phone);
+    if (withDelete) el.querySelector(".icon-btn").onclick = () => { family.splice(i, 1); store.set("sg.family", family); renderFamily(); toast("삭제했어요"); };
+    return el;
+  }
+  function renderFamily() {
+    const list = $("#famList");
+    list.replaceChildren(...family.map((f, i) => familyCard(f, i, true)));
+    if (!family.length) { const p = document.createElement("p"); p.className = "note"; p.textContent = "아직 등록된 가족이 없어요. 아래에서 등록해 주세요."; list.append(p); }
+  }
+  $("#famForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = $("#famName").value.trim(), phone = $("#famPhone").value.trim();
+    if (!name || telOf(phone).length < 8) { toast("이름과 전화번호를 확인해 주세요"); return; }
+    family.push({ name, phone }); store.set("sg.family", family);
+    $("#famName").value = ""; $("#famPhone").value = "";
+    renderFamily(); toast(name + " 번호를 저장했어요");
+  });
+  $("#dockFamily").onclick = () => show("family");
+
+  /* ---------- 결과 ---------- */
+  const COPY = {
+    msg: [
+      { t: "위험 신호를 찾지 못했어요", s: "그래도 모르는 곳의 링크는 누르지 않는 게 안전해요", why: "확인한 내용" },
+      { t: "확인이 필요해요", s: "링크를 누르기 전에 가족에게 먼저 물어보세요", why: "이런 점이 마음에 걸려요" },
+      { t: "위험한 문자예요", s: "링크를 누르지 말고, 답장하지 마세요", why: "이런 점이 위험해요" },
+    ],
+    call: [
+      { t: "큰 위험 신호는 없어요", s: "그래도 돈 이야기가 나오면 가족에게 꼭 확인하세요", why: "확인한 내용" },
+      { t: "확인이 필요해요", s: "돈을 보내기 전에 가족 번호로 직접 전화해 보세요", why: "이런 점이 마음에 걸려요" },
+      { t: "사기 의심! 돈을 보내지 마세요", s: "지금 바로 등록된 가족 번호로 직접 확인하세요", why: "이런 점이 위험해요" },
+    ],
+  };
+  const ICON = ["#i-shield", "#i-warn", "#i-alert"];
+  let lastSpoken = "";
+  let lastResult = null;
+
+  function actionButton(label, cls, onClick, icon) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn " + (cls || "");
+    b.innerHTML = icon ? `<svg width="22" height="22"><use href="${icon}"/></svg>` : "";
+    b.append(label); b.onclick = onClick;
+    return b;
+  }
+
+  function showResult(r, kind, extra = {}) {
+    lastResult = { r, kind };
+    const c = COPY[kind][r.level];
+    $("#resStatus").className = "status l" + r.level;
+    $("#resIcon").innerHTML = `<use href="${ICON[r.level]}"/>`;
+    $("#resTitle").textContent = c.t;
+    $("#resSub").textContent = c.s;
+    $("#resType").textContent = r.level ? r.type : (kind === "msg" ? "일반 메시지로 보여요" : "특이 신호 없음");
+    $("#resWhyTitle").textContent = c.why;
+
+    const ul = $("#resReasons"); ul.replaceChildren();
+    const reasons = r.reasons.length ? r.reasons : [kind === "msg" ? "돈·앱 설치·개인정보 요구가 보이지 않아요" : "돈 요구나 비밀 유지 같은 신호가 없었어요"];
+    for (const t of reasons) {
+      const li = document.createElement("li");
+      li.innerHTML = `<svg width="20" height="20" style="color:var(--${["safe", "warn", "danger"][r.level]})"><use href="#i-dot"/></svg><span></span>`;
+      li.querySelector("span").textContent = t; ul.append(li);
+    }
+    const links = $("#resLinks"); links.replaceChildren();
+    for (const l of r.links || []) {
+      const d = document.createElement("div");
+      d.className = "link-item" + (l.official && !l.w ? " ok" : "");
+      d.innerHTML = "<b></b><span></span>";
+      d.querySelector("b").textContent = l.host;
+      d.querySelector("span").textContent = l.official && !l.w ? "공식 주소로 보여요" : (l.flags[0] || "모르는 곳의 주소예요. 누르지 마세요");
+      links.append(d);
+    }
+
+    const acts = $("#resActions"); acts.replaceChildren();
+    const fam = family[0];
+    if (r.level >= 1) {
+      if (fam) {
+        const a = document.createElement("a");
+        a.className = "btn solid"; a.href = "tel:" + telOf(fam.phone);
+        a.innerHTML = `<svg width="22" height="22"><use href="#i-phone"/></svg>`;
+        a.append(`${fam.name}에게 직접 전화 (${fam.phone})`);
+        acts.append(a);
+      } else acts.append(actionButton("가족 번호 등록하고 확인하기", "solid", () => show("family"), "#i-family"));
+      acts.append(actionButton("가족에게 알릴 글 복사하기", "", () => copy(`[시니어가드] ${r.type}이(가) 의심되는 ${kind === "msg" ? "문자" : "전화"}를 받았어요. ${r.reasons.join(", ")}. 확인 부탁해요.`), "#i-copy"));
+    }
+    if (r.level === 2) acts.append(actionButton(kind === "msg" ? "이미 링크를 눌렀어요" : "이미 돈을 보냈어요", "red", () => show("sos"), "#i-alert"));
+    if (extra.aiRetry) acts.append(extra.aiRetry);
+    acts.append(actionButton("다른 것 검사하기", "ghost", () => show("home")));
+
+    $("#resFoot").textContent = extra.foot || "시니어가드의 판정은 참고용이에요. 모르는 곳의 돈 요구는 언제나 가족에게 먼저 확인하세요.";
+    show("result");
+    lastSpoken = `${c.t}. ${c.s}. ${r.level ? r.reasons.slice(0, 2).join(". ") : ""}`;
+    speak(lastSpoken);
+    if (r.level) buzz(r.level);
+  }
+  $("#resReplay").onclick = () => { const v = voice; voice = true; speak(lastSpoken); voice = v; };
+
+  /* ---------- 글자 검사 ---------- */
+  const SAMPLES = [
+    ["택배 문자", "[Web발신] [CJ대한통운] 고객님 택배가 주소 불일치로 반송 예정입니다. 주소 확인: http://cj-delivery.xyz/k3"],
+    ["가족 사칭 카톡", "엄마 나 폰 액정 깨져서 임시폰으로 연락해. 급하게 문화상품권 결제 좀 대신 해줄 수 있어? 아빠한테는 말하지 마"],
+    ["부고 문자", "[부고] 故 김영수님께서 별세하셨기에 삼가 알려드립니다. 장례식장 안내 me2.do/xA1b"],
+    ["결제 승인 문자", "[Web발신] 해외결제 승인 완료 978,000원 본인이 아닐 경우 고객센터 02-1234-5678로 문의"],
+    ["진짜 택배 안내", "[CJ대한통운] 고객님의 상품이 오늘 14~16시 배송 예정입니다. 조회: https://www.cjlogistics.com/ko/tool/parcel"],
+  ];
+  const sb = $("#samples");
+  for (const [label, text] of SAMPLES) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+    b.onclick = () => { $("#msgInput").value = text; $("#msgInput").scrollIntoView({ block: "center" }); };
+    sb.append(b);
+  }
+  $("#textRun").onclick = () => {
+    const text = $("#msgInput").value.trim();
+    if (text.length < 4) { toast("검사할 글자를 먼저 붙여넣어 주세요"); $("#msgInput").focus(); return; }
+    const r = SG.analyzeText(text);
+    const extra = {};
+    if (sample && r.level < 2) extra.aiRetry = actionButton("AI에게 한 번 더 물어보기", "", () => aiText(text, r), "#i-msg");
+    showResult(r, "msg", extra);
+  };
+
+  /* ---------- 방금 통화 ---------- */
+  let answers = {};
+  function renderQuestions() {
+    answers = {};
+    const box = $("#questions"); box.replaceChildren();
+    for (const q of SG.CALL_QUESTIONS) {
+      const el = document.createElement("div"); el.className = "q";
+      el.innerHTML = `<h3></h3><p></p><div class="seg" role="group"><button type="button" class="yes" data-v="yes" aria-pressed="false">예</button><button type="button" data-v="no" aria-pressed="false">아니요</button><button type="button" data-v="unsure" aria-pressed="false">몰라요</button></div>`;
+      el.querySelector("h3").textContent = q.q;
+      el.querySelector("p").textContent = q.sub;
+      el.querySelector(".seg").setAttribute("aria-label", q.q);
+      el.querySelectorAll(".seg button").forEach((b) => b.onclick = () => {
+        answers[q.id] = b.dataset.v;
+        el.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      });
+      box.append(el);
+    }
+  }
+  $("#callRun").onclick = () => {
+    if (!Object.keys(answers).length) { toast("하나 이상 답해 주세요"); return; }
+    showResult(SG.analyzeCall(answers), "call");
+  };
+
+  /* ---------- 사진 검사: 휴대폰 안에서 한글 글자 읽기 (Tesseract.js) ---------- */
+  const sample = null;
+  const aiText = () => {};
+  let ocrWorker = null, capFileBlob = null, ocrCancelled = false;
+  const TESS_URL = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+
+  function loadScript(src) {
+    return new Promise((ok, fail) => {
+      if (window.Tesseract) return ok();
+      const el = document.createElement("script");
+      el.src = src; el.onload = ok; el.onerror = () => fail(new Error("load"));
+      document.head.append(el);
+    });
+  }
+  async function getWorker(onStatus) {
+    if (ocrWorker) return ocrWorker;
+    await loadScript(TESS_URL);
+    ocrWorker = await Tesseract.createWorker("kor+eng", 1, {
+      logger: (m) => {
+        if (m.status === "recognizing text") onStatus(`글자를 읽는 중이에요 ${Math.round(m.progress * 100)}%`);
+        else if (/load|initializ/.test(m.status)) onStatus("처음 한 번은 글자 읽기 준비에 시간이 걸려요");
+      },
+    });
+    return ocrWorker;
+  }
+
+  // 아이폰 캡처는 크기가 커서, 글자를 읽기 좋은 크기로 줄입니다
+  async function prepImage(file) {
+    try {
+      const bmp = await createImageBitmap(file);
+      const max = 2000, k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      return c;
+    } catch { return file; }
+  }
+
+  $("#capFile").addEventListener("change", (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    capFileBlob = f;
+    const box = $("#pickBox");
+    box.querySelector("img")?.remove();
+    const img = document.createElement("img"); img.alt = "고른 캡처 사진";
+    img.src = URL.createObjectURL(f);
+    box.prepend(img);
+    box.querySelector("svg").style.display = "none";
+    $("#pickText").textContent = "다른 사진 고르기";
+    $("#capRun").disabled = false;
+    $("#capMsg").textContent = "";
+  });
+
+  $("#capRun").onclick = async () => {
+    if (!capFileBlob) return;
+    ocrCancelled = false;
+    $("#capRun").hidden = true; $("#capBusy").hidden = false; $("#capMsg").textContent = "";
+    $("#capBusyText").textContent = "검사 중입니다. 잠시만 기다려 주세요";
+    speak("검사 중입니다. 잠시만 기다려 주세요");
+    try {
+      const worker = await getWorker((t) => ($("#capBusyText").textContent = t));
+      const { data } = await worker.recognize(await prepImage(capFileBlob));
+      if (ocrCancelled) return;
+      const text = (data.text || "").replace(/[ \t]+/g, " ").trim();
+      if (text.replace(/\s/g, "").length < 6) { $("#capMsg").textContent = "사진에서 글자를 찾지 못했어요. 메시지 부분이 잘 보이게 다시 캡처해 주세요."; return; }
+      $("#msgInput").value = text;
+      showResult(SG.analyzeText(text), "msg", { foot: "사진 속 글자는 휴대폰 안에서 읽었어요. 글자를 잘못 읽었을 수 있으니, 결과가 이상하면 '문자 글자로 검사하기'에서 고쳐서 다시 검사해 주세요." });
+    } catch (e) {
+      if (!ocrCancelled) $("#capMsg").textContent = "사진 검사를 준비하지 못했어요. 인터넷 연결을 확인하거나, 아래 방법으로 글자를 붙여넣어 검사해 주세요.";
+    } finally {
+      $("#capRun").hidden = false; $("#capBusy").hidden = true;
+    }
+  };
+  $("#capStop").onclick = () => { ocrCancelled = true; $("#capRun").hidden = false; $("#capBusy").hidden = true; };
+
+  /* ---------- 시연 모드 ---------- */
+  const DEMO = [
+    { p: 0, quote: "따르릉… '아들'로 저장된 번호로 전화가 왔어요", sig: "통화 시작 · 특이 신호 없음", trk: "" },
+    { p: 8, quote: "\"여보세요… 엄마?\"", sig: "평범한 인사", trk: "" },
+    { p: 30, quote: "\"엄마, 나 사고 났어.\"", sig: "가족 호칭 + 사고 상황", trk: "대화 분석" },
+    { p: 48, quote: "\"상대방이 합의금을 달래.\"", sig: "돈 요구 등장", trk: "대화 분석" },
+    { p: 63, quote: "\"지금 당장 보내야 해.\"", sig: "급하다고 재촉", trk: "대화 분석" },
+    { p: 89, quote: "\"아빠한테는 말하지 마.\"", sig: "비밀 유지 요구", trk: "대화 분석" },
+    { p: 97, quote: "통화가 끝나고 은행 앱을 열었어요", sig: "기계로 만든 목소리 특징 + 통화 직후 송금 시도", trk: "음성 분석 · 행동 분석" },
+  ];
+  let demoT = null, demoI = 0;
+  function demoColor(p) { return p >= 75 ? "var(--danger)" : p >= 40 ? "var(--warn)" : "var(--safe)"; }
+  function demoStep() {
+    const s = DEMO[demoI];
+    $("#demoPct").textContent = s.p + "%";
+    $("#demoPct").style.color = demoColor(s.p);
+    $("#demoBar").style.width = s.p + "%";
+    $("#demoBar").style.background = demoColor(s.p);
+    $("#demoState").textContent = s.p >= 75 ? "위험 · 송금 중단 경고" : s.p >= 40 ? "주의 · 가족 확인 권고" : "정상";
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="quote"></span><span class="sig"></span>`;
+    li.querySelector(".quote").textContent = s.quote;
+    li.querySelector(".sig").innerHTML = s.trk ? `<span class="trk"></span>` : "";
+    if (s.trk) li.querySelector(".trk").textContent = s.trk;
+    li.querySelector(".sig").append(s.sig);
+    $("#demoLog").prepend(li);
+    demoI++;
+    if (demoI >= DEMO.length) {
+      stopDemo();
+      $("#demoStart").textContent = "경고 화면 보기";
+      speak("사기 의심. 지금은 돈을 보내지 마세요.");
+      buzz(2);
+    }
+  }
+  function stopDemo() { clearInterval(demoT); demoT = null; }
+  function resetDemo() {
+    stopDemo(); demoI = 0;
+    $("#demoLog").replaceChildren(); $("#demoPct").textContent = "0%"; $("#demoPct").style.color = "";
+    $("#demoBar").style.width = "0"; $("#demoState").textContent = "대기 중"; $("#demoStart").textContent = "체험 시작";
+  }
+  $("#demoStart").onclick = () => {
+    if (demoI >= DEMO.length) {
+      showResult({ level: 2, type: "가족 사칭 전화 (시연)", reasons: ["급하게 돈을 요구했어요", "다른 사람에게 비밀로 하랬어요", "기계로 만든 목소리 특징이 있어요"], links: [] }, "call", { foot: "시연용 화면이에요. 실제 분석 결과가 아닙니다." });
+      return;
+    }
+    if (demoT) return;
+    demoStep();
+    demoT = setInterval(demoStep, 1700);
+  };
+  $("#demoReset").onclick = resetDemo;
+
+  /* ---------- 시작 ---------- */
+  const params = new URLSearchParams(location.search);
+  const incoming = (params.get("text") || "").trim();
+  const start = (location.hash || "").slice(1);
+  if (incoming) {
+    $("#msgInput").value = incoming;
+    history.replaceState(null, "", location.pathname);
+    showResult(SG.analyzeText(incoming), "msg", { foot: "단축어로 받은 글자를 검사했어요. 결과는 참고용이에요." });
+  } else {
+    show(VIEWS.includes(start) && start !== "result" ? start : "home");
+  }
+})();
+</script>
+
+</body>
+</html>
